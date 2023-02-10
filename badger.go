@@ -1,6 +1,7 @@
 package raftbadger
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -18,7 +19,9 @@ var (
 	prefixDBConfig = []byte("conf")
 
 	// not found the key
-	ErrNotFoundKey = raft.ErrLogNotFound
+	ErrNotFoundKey        = raft.ErrLogNotFound
+	ErrNotFoundFirstIndex = errors.New("not found first index")
+	ErrNotFoundLastIndex  = errors.New("not found last index")
 )
 
 // buildConfKey prefixDBLogs + key
@@ -85,51 +88,63 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 
 // FirstIndex get the first index from the Raft log.
 func (s *Storage) FirstIndex() (uint64, error) {
-	first := uint64(0)
-	err := s.db.View(func(txn *badger.Txn) error {
-		iter := txn.NewIterator(badger.DefaultIteratorOptions) // oeder asc
+	var (
+		first = uint64(0)
+		err   error
+	)
+
+	err = s.db.View(func(txn *badger.Txn) error {
+		iter := txn.NewIterator(badger.DefaultIteratorOptions) // order asc
 		defer iter.Close()
 
+		var has bool
 		iter.Seek(prefixDBLogs)
 		if iter.ValidForPrefix(prefixDBLogs) {
 			item := iter.Item()
-			key := item.Key()[len(prefixDBLogs):]
-			first = bytesToUint64(key)
+			first = parseIndexByLogsKey(item)
+			has = true
+		}
+		if !has {
+			return ErrNotFoundFirstIndex
 		}
 		return nil
 	})
-	if err != nil {
-		return 0, err
-	}
-	return first, nil
+	return first, err
 }
+
+var maxSeekKey = append(getPrefixDBLogs(), uint64ToBytes(math.MaxUint64)...)
 
 // LastIndex get the last index from the Raft log.
 func (s *Storage) LastIndex() (uint64, error) {
-	last := uint64(0)
-	seekKey := append(getPrefixDBLogs(), 0xFF)
+	var (
+		last = uint64(0)
+		err  error
+	)
 
-	err := s.db.View(func(txn *badger.Txn) error {
+	err = s.db.View(func(txn *badger.Txn) error {
 		opts := badger.IteratorOptions{
-			PrefetchValues: true,
-			PrefetchSize:   10,
+			PrefetchValues: true, // prefetch values
+			PrefetchSize:   1,    // default 100
 			Reverse:        true, // order desc
 		}
+
 		iter := txn.NewIterator(opts)
 		defer iter.Close()
 
-		iter.Seek(seekKey)
+		var has bool
+		iter.Seek(maxSeekKey)
 		if iter.ValidForPrefix(prefixDBLogs) {
 			item := iter.Item()
 			key := item.Key()[len(prefixDBLogs):]
 			last = bytesToUint64(key)
+			has = true
+		}
+		if !has {
+			return ErrNotFoundLastIndex
 		}
 		return nil
 	})
-	if err != nil {
-		return 0, err
-	}
-	return last, nil
+	return last, err
 }
 
 // GetLog is used to get a log from Badger by a given index.
@@ -317,4 +332,13 @@ func (s *Storage) Close() error {
 // GetDB return badger database instance.
 func (s *Storage) GetDB() *badger.DB {
 	return s.db
+}
+
+// DeleteFiles delete badgerDB files
+func (s *Storage) DeleteFiles() {
+	// close() is safe call
+	s.Close()
+
+	os.RemoveAll(s.db.Opts().Dir)
+	os.RemoveAll(s.db.Opts().ValueDir)
 }

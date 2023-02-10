@@ -42,7 +42,7 @@ func main() {
 	for i := 0; i < 20; i++ {
 		logs = append(logs, &raft.Log{
 			Index: uint64(i),
-			Term:  10,
+			Term:  uint64(i),
 			Type:  0,
 			Data:  []byte("a"),
 		})
@@ -51,6 +51,16 @@ func main() {
 	// test StoreLogs api
 	err = store.StoreLogs(logs)
 	checkError(err)
+
+	// test FirstIndex api
+	index, err = store.FirstIndex()
+	checkError(err)
+	fmt.Println("the first index is ", index)
+
+	// test LastIndex api
+	index, err = store.LastIndex()
+	checkError(err)
+	fmt.Println("the last index is ", index)
 
 	for i := 0; i < 10; i++ {
 		logptr := new(raft.Log)

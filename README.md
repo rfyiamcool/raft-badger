@@ -2,10 +2,56 @@
 
 `raft-badger` implements LogStore and StableStore Interface of `hashcorp/raft`.
 
-**refer**
+**links**
 
 - [badgerDB](https://github.com/dgraph-io/badger)
 - [hashcorp-raft](https://github.com/hashicorp/raft)
+
+### hashcorp api
+
+#### hashcorp raft.LogStore
+
+`raft-badger` implements LogStore interface of hashcorp/raft.
+
+```go
+type LogStore interface {
+	// FirstIndex returns the first index written. 0 for no entries.
+	FirstIndex() (uint64, error)
+
+	// LastIndex returns the last index written. 0 for no entries.
+	LastIndex() (uint64, error)
+
+	// GetLog gets a log entry at a given index.
+	GetLog(index uint64, log *Log) error
+
+	// StoreLog stores a log entry.
+	StoreLog(log *Log) error
+
+	// StoreLogs stores multiple log entries.
+	StoreLogs(logs []*Log) error
+
+	// DeleteRange deletes a range of log entries. The range is inclusive.
+	DeleteRange(min, max uint64) error
+}
+```
+
+#### hashcorp raft.StableStore
+
+`raft-badger` implements StableStore interface of hashcorp/raft.
+
+```go
+type StableStore interface {
+	Set(key []byte, val []byte) error
+
+	// Get returns the value for key, or an empty byte slice if key was not found.
+	Get(key []byte) ([]byte, error)
+
+	SetUint64(key []byte, val uint64) error
+
+	// GetUint64 returns the uint64 value for key, or 0 if key was not found.
+	GetUint64(key []byte) (uint64, error)
+}
+```
 
 ### installation
 
