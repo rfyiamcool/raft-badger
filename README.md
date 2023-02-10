@@ -2,6 +2,8 @@
 
 `raft-badger` implements LogStore and StableStore Interface of `hashcorp/raft`.
 
+![raft-badger in hascorp/raft](./docs/design.jpg)
+
 **links**
 
 - [badgerDB](https://github.com/dgraph-io/badger)
