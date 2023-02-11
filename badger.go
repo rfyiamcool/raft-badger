@@ -80,7 +80,7 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 		opts.ValueDir = fpath
 	}
 	if config.DisableLogger {
-		opts.WithLogger(&nullLogger{})
+		opts.Logger = &nullLogger{}
 	}
 
 	switch config.Compression {
