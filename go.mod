@@ -7,4 +7,5 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/hashicorp/go-msgpack v0.5.5
 	github.com/hashicorp/raft v1.3.11
+	github.com/stretchr/testify v1.8.1 // indirect
 )

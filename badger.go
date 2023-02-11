@@ -37,9 +37,9 @@ func buildMetaKey(key []byte) []byte {
 }
 
 // parseIndexByLogsKey parse the index from logs key
-func parseIndexByLogsKey(item *badger.Item) uint64 {
-	key := item.Key()[len(prefixDBLogs):]
-	idx := bytesToUint64(key)
+func parseIndexByLogsKey(key []byte) uint64 {
+	rawkey := key[len(prefixDBLogs):]
+	idx := bytesToUint64(rawkey)
 	return idx
 }
 
@@ -115,7 +115,7 @@ func (s *Storage) FirstIndex() (uint64, error) {
 		iter.Seek(prefixDBLogs)
 		if iter.ValidForPrefix(prefixDBLogs) {
 			item := iter.Item()
-			first = parseIndexByLogsKey(item)
+			first = parseIndexByLogsKey(item.Key())
 			has = true
 		}
 		if !has {
@@ -175,7 +175,7 @@ func (s *Storage) GetLog(idx uint64, log *raft.Log) error {
 			return err
 		}
 
-		return decodeMsgPack(val, log)
+		return decodeMsgpack(val, log)
 	})
 }
 
@@ -197,7 +197,7 @@ func (s *Storage) StoreLogs(logs []*raft.Log) error {
 		for index := r.from; index < r.to; index++ {
 			log := logs[index]
 			key := buildLogsKey(log.Index)
-			out, err := encodeMsgPack(log)
+			out, err := encodeMsgpack(log)
 			if err != nil {
 				return err
 			}
@@ -245,7 +245,7 @@ func (s *Storage) DeleteRange(min, max uint64) error {
 	for iter.Seek(minKey); iter.ValidForPrefix(prefixDBLogs); iter.Next() {
 		item := iter.Item()
 		// parse the index from logs key
-		idx := parseIndexByLogsKey(item)
+		idx := parseIndexByLogsKey(item.Key())
 		if idx > max {
 			break
 		}
@@ -350,8 +350,9 @@ func (s *Storage) GetDB() *badger.DB {
 
 // DeleteFiles delete badgerDB files
 func (s *Storage) DeleteFiles() {
-	// close() is safe call
-	s.Close()
+	if s.db != nil {
+		s.Close() // close() is safe call
+	}
 
 	os.RemoveAll(s.db.Opts().Dir)
 	os.RemoveAll(s.db.Opts().ValueDir)
