@@ -8,15 +8,16 @@ import (
 	"path"
 
 	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/options"
 	"github.com/hashicorp/raft"
 )
 
 var (
 	// bucket for raft logs
-	prefixDBLogs = []byte("logs")
+	prefixDBLogs = []byte("logs-")
 
 	// bucket for raft config
-	prefixDBConfig = []byte("conf")
+	prefixDBMeta = []byte("meta-")
 
 	// not found the key
 	ErrNotFoundKey        = raft.ErrLogNotFound
@@ -30,9 +31,9 @@ func buildLogsKey(idx uint64) []byte {
 	return append(bs, uint64ToBytes(idx)...)
 }
 
-// buildConfKey prefixDBConfig + key
-func buildConfKey(key []byte) []byte {
-	return []byte(fmt.Sprintf("%s%d", prefixDBConfig, key))
+// buildMetaKey prefixDBConfig + key
+func buildMetaKey(key []byte) []byte {
+	return []byte(fmt.Sprintf("%s%d", prefixDBMeta, key))
 }
 
 // parseIndexByLogsKey parse the index from logs key
@@ -48,7 +49,8 @@ func getPrefixDBLogs() []byte {
 }
 
 type Config struct {
-	DataPath string `yaml:"dbpath"`
+	DataPath    string `yaml:"dbpath" json:"dbpath" toml:"dbpath"`
+	Compression string `yaml:"compression" json:"compression" toml:"compression"`
 }
 
 // Storage
@@ -64,15 +66,27 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 		config.DataPath = os.TempDir()
 	}
 
+	// reset dir config
 	fpath := path.Join(config.DataPath)
 	if opts == nil {
 		pv := badger.DefaultOptions(fpath)
 		opts = &pv
 	}
-	// cover dir
-	opts.ValueDir = fpath
-	opts.Dir = fpath
+	if opts.Dir == "" {
+		opts.Dir = fpath
+	}
+	if opts.ValueDir == "" {
+		opts.ValueDir = fpath
+	}
 
+	switch config.Compression {
+	case "zstd":
+		opts.Compression = options.ZSTD
+	case "snappy":
+		opts.Compression = options.Snappy
+	}
+
+	// init storage
 	store := &Storage{
 		config: config,
 		opts:   opts,
@@ -253,7 +267,7 @@ func (s *Storage) DeleteRange(min, max uint64) error {
 // Set is used to set kv
 func (s *Storage) Set(key, val []byte) error {
 	err := s.db.Update(func(txn *badger.Txn) error {
-		key = buildConfKey(key)
+		key = buildMetaKey(key)
 		return txn.Set(key, val)
 	})
 	return err
@@ -267,7 +281,7 @@ func (s *Storage) Get(key []byte) ([]byte, error) {
 	)
 
 	err = s.db.View(func(txn *badger.Txn) error {
-		key = buildConfKey(key)
+		key = buildMetaKey(key)
 		item, err := txn.Get(key)
 		if err != nil {
 			return raft.ErrLogNotFound
@@ -284,7 +298,7 @@ func (s *Storage) Get(key []byte) ([]byte, error) {
 
 // SetUint64 key and val
 func (s *Storage) SetUint64(key []byte, val uint64) error {
-	key = buildConfKey(key)
+	key = buildMetaKey(key)
 	s.Set(key, uint64ToBytes(val))
 
 	return nil
@@ -292,7 +306,7 @@ func (s *Storage) SetUint64(key []byte, val uint64) error {
 
 // GetUint64 returns uint64 value of key
 func (s *Storage) GetUint64(key []byte) (uint64, error) {
-	key = buildConfKey(key)
+	key = buildMetaKey(key)
 	val, err := s.Get(key)
 	if err != nil {
 		return 0, err
@@ -303,7 +317,7 @@ func (s *Storage) GetUint64(key []byte) (uint64, error) {
 
 // Delete kv of the key
 func (s *Storage) Delete(key []byte) error {
-	key = buildConfKey(key)
+	key = buildMetaKey(key)
 	err := s.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete(key)
 	})
