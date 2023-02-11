@@ -49,8 +49,9 @@ func getPrefixDBLogs() []byte {
 }
 
 type Config struct {
-	DataPath    string `yaml:"dbpath" json:"dbpath" toml:"dbpath"`
-	Compression string `yaml:"compression" json:"compression" toml:"compression"`
+	DataPath      string `yaml:"dbpath" json:"dbpath" toml:"dbpath"`
+	Compression   string `yaml:"compression" json:"compression" toml:"compression"`
+	DisableLogger bool   `yaml:"disable_logger" json:"disable_logger" toml:"disable_logger"`
 }
 
 // Storage
@@ -78,6 +79,7 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 	if opts.ValueDir == "" {
 		opts.ValueDir = fpath
 	}
+<<<<<<< HEAD
 
 	switch config.Compression {
 	case "zstd":
@@ -86,6 +88,19 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 		opts.Compression = options.Snappy
 	}
 
+=======
+	if config.DisableLogger {
+		opts.WithLogger(&nullLogger{})
+	}
+
+	switch config.Compression {
+	case "zstd":
+		opts.Compression = options.ZSTD
+	case "snappy":
+		opts.Compression = options.Snappy
+	}
+
+>>>>>>> dd98607... feat: disable logger in config
 	// init storage
 	store := &Storage{
 		config: config,
