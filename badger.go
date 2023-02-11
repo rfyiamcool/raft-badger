@@ -78,6 +78,7 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 	if opts.ValueDir == "" {
 		opts.ValueDir = fpath
 	}
+<<<<<<< HEAD
 
 	switch config.Compression {
 	case "zstd":
@@ -86,6 +87,16 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 		opts.Compression = options.Snappy
 	}
 
+=======
+
+	switch config.Compression {
+	case "zstd":
+		opts.Compression = options.ZSTD
+	case "snappy":
+		opts.Compression = options.Snappy
+	}
+
+>>>>>>> 03aac7604d8d641ddc60ef8e616bf14a42ccc50b
 	// init storage
 	store := &Storage{
 		config: config,
