@@ -35,3 +35,10 @@ func uint64ToBytes(u uint64) []byte {
 	binary.BigEndian.PutUint64(buf, u)
 	return buf
 }
+
+type nullLogger struct{}
+
+func (l *nullLogger) Errorf(msg string, args ...interface{})   {}
+func (l *nullLogger) Warningf(msg string, args ...interface{}) {}
+func (l *nullLogger) Infof(msg string, args ...interface{})    {}
+func (l *nullLogger) Debugf(msg string, args ...interface{})   {}
