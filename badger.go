@@ -79,16 +79,6 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 	if opts.ValueDir == "" {
 		opts.ValueDir = fpath
 	}
-<<<<<<< HEAD
-
-	switch config.Compression {
-	case "zstd":
-		opts.Compression = options.ZSTD
-	case "snappy":
-		opts.Compression = options.Snappy
-	}
-
-=======
 	if config.DisableLogger {
 		opts.WithLogger(&nullLogger{})
 	}
@@ -100,7 +90,6 @@ func New(config Config, opts *badger.Options) (*Storage, error) {
 		opts.Compression = options.Snappy
 	}
 
->>>>>>> dd98607... feat: disable logger in config
 	// init storage
 	store := &Storage{
 		config: config,
