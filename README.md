@@ -61,9 +61,44 @@ type StableStore interface {
 go get -u github.com/rfyiamcool/raft-badger
 ```
 
+### performance
+
+**StoreLogs**
+
+store logs qps = `10w` per second
+
+```
+goos: darwin
+pkg: github.com/rfyiamcool/raft-badger
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkStoreLogs
+BenchmarkStoreLogs-12    	   99162	     11767 ns/op	    5032 B/op	      67 allocs/op
+```
+
+**GetLog**
+
+get log qps = `30w` per second
+
+```
+pkg: github.com/rfyiamcool/raft-badger
+cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
+BenchmarkGetLog
+BenchmarkGetLog-12    	  307989	      3362 ns/op	    1717 B/op	      41 allocs/op
+```
+
 ### usage with hashcorp-raft
 
 ```go
+import (
+	"os"
+	"fmt"
+
+	"github.com/hashicorp/raft"
+	"github.com/dgraph-io/badger/v3/options"
+
+	raftbadger "github.com/rfyiamcool/raft-badger"
+)
+
 func main() {
 	var (
 		logStore raft.LogStore
@@ -72,11 +107,15 @@ func main() {
 
 	cfg = raftbadger.Config{
 		DataPath: "/tmp/raft",
+		Compression: "zstd", // zstd, snappy
+		DisableLogger: true,
 	}
 
-	badgerDB, err := raftbadger.New(cfg, nil)
+	opts := badger.DefaultOptions(cfg.DataPath)
+	badgerDB, err := raftbadger.New(cfg, &opts)
 	if err != nil {
-		return fmt.Errorf("fail to create new badger sotrage: %s", err)
+		fmt.Println("fail to create new badger sotrage, err: %s", err.Error())
+		os.Exit(1)
 	}
 
 	logStore = badgerDB

@@ -16,8 +16,9 @@ func init() {
 
 func buildTestConfig() Config {
 	cfg := Config{
-		DataPath:    "/tmp/raft",
-		Compression: "zstd",
+		DataPath:      "/tmp/raft",
+		Compression:   "zstd",
+		DisableLogger: true,
 	}
 
 	return cfg
@@ -54,6 +55,24 @@ func BenchmarkGet(b *testing.B) {
 	}
 }
 
+func BenchmarkStoreLogs(b *testing.B) {
+	cfg := buildTestConfig()
+	defer os.RemoveAll(cfg.DataPath)
+
+	store, err := New(cfg, nil)
+	defer store.Close()
+
+	assert.Nil(b, err)
+	for n := 0; n < b.N; n++ {
+		store.StoreLogs([]*raft.Log{
+			{
+				Index: uint64(n),
+				Term:  uint64(n),
+			},
+		})
+	}
+}
+
 func BenchmarkGetLog(b *testing.B) {
 	cfg := buildTestConfig()
 	defer os.RemoveAll(cfg.DataPath)
@@ -62,9 +81,19 @@ func BenchmarkGetLog(b *testing.B) {
 	defer store.Close()
 
 	assert.Nil(b, err)
+	for n := 0; n < b.N; n++ {
+		store.StoreLogs([]*raft.Log{
+			{
+				Index: uint64(n),
+				Term:  uint64(n),
+			},
+		})
+	}
+
+	b.ResetTimer()
+
 	ralog := new(raft.Log)
 	for n := 0; n < b.N; n++ {
-		store.Set(uint64ToBytes(uint64(n)), []byte("xiaorui.cc"))
 		store.GetLog(uint64(n), ralog)
 	}
 }
