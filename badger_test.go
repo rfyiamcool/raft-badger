@@ -1,6 +1,8 @@
 package raftbadger
 
 import (
+	"bytes"
+	"fmt"
 	"math/rand"
 	"os"
 	"testing"
@@ -239,4 +241,27 @@ func TestParseLogsKey(t *testing.T) {
 	bs := buildLogsKey(idx)
 	curidx := parseIndexByLogsKey(bs)
 	assert.Equal(t, idx, curidx)
+}
+
+func BenchmarkBuildMetaKey(b *testing.B) {
+	// 15ns
+	for n := 0; n < b.N; n++ {
+		buildMetaKey([]byte("name"))
+	}
+}
+
+func BenchmarkBuildMetaKeyByFmt(b *testing.B) {
+	// 251ns
+	for n := 0; n < b.N; n++ {
+		_ = []byte(fmt.Sprintf("%s%d", prefixDBMeta, []byte("name")))
+	}
+}
+
+func BenchmarkBuildMetaKeyByBuffer(b *testing.B) {
+	// 35ns
+	for n := 0; n < b.N; n++ {
+		buf := bytes.Buffer{}
+		buf.Write(prefixDBMeta)
+		buf.Write([]byte("name"))
+	}
 }
