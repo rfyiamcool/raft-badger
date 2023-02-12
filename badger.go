@@ -2,7 +2,6 @@ package raftbadger
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"os"
 	"path"
@@ -33,7 +32,9 @@ func buildLogsKey(idx uint64) []byte {
 
 // buildMetaKey prefixDBConfig + key
 func buildMetaKey(key []byte) []byte {
-	return []byte(fmt.Sprintf("%s%d", prefixDBMeta, key))
+	var out = make([]byte, 0, len(key)+len(prefixDBMeta))
+	out = append(out, prefixDBMeta...)
+	return append(out, key...)
 }
 
 // parseIndexByLogsKey parse the index from logs key
