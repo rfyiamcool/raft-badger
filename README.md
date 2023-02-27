@@ -1,19 +1,19 @@
 ## raft-badger
 
-`raft-badger` implements LogStore and StableStore Interface of `hashcorp/raft`.
+`raft-badger` implements LogStore and StableStore Interface of `hashicorp/raft`.
 
 ![raft-badger in hascorp/raft](./docs/design1.jpg)
 
 **links**
 
 - [badgerDB](https://github.com/dgraph-io/badger)
-- [hashcorp-raft](https://github.com/hashicorp/raft)
+- [hashicorp-raft](https://github.com/hashicorp/raft)
 
-### hashcorp api
+### hashicorp api
 
-#### hashcorp raft.LogStore
+#### hashicorp raft.LogStore
 
-`raft-badger` implements LogStore interface of hashcorp/raft.
+`raft-badger` implements LogStore interface of hashicorp/raft.
 
 ```go
 type LogStore interface {
@@ -37,9 +37,9 @@ type LogStore interface {
 }
 ```
 
-#### hashcorp raft.StableStore
+#### hashicorp raft.StableStore
 
-`raft-badger` implements StableStore interface of hashcorp/raft.
+`raft-badger` implements StableStore interface of hashicorp/raft.
 
 ```go
 type StableStore interface {
@@ -86,7 +86,7 @@ BenchmarkGetLog
 BenchmarkGetLog-12    	  307989	      3362 ns/op	    1717 B/op	      41 allocs/op
 ```
 
-### usage with hashcorp-raft
+### usage with hashicorp-raft
 
 ```go
 import (
